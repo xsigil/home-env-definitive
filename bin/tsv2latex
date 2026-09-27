@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Convert TSV stream or file into a clean LaTeX tabular environment
+set -euo pipefail
+
+ALIGN_CHAR="l"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -c|--center)
+            ALIGN_CHAR="c"
+            shift
+            ;;
+        -r|--right)
+            ALIGN_CHAR="r"
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $(basename "$0") [-c|-r] [file.tsv]"
+            echo "Converts TSV data into LaTeX tabular environment."
+            exit 0
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+awk -F'\t' -v align="$ALIGN_CHAR" '
+NR == 1 {
+    # カラム数分のアライメント指定（例: \begin{tabular}{lll}）
+    printf "\\begin{tabular}{"
+    for (i = 1; i <= NF; i++) {
+        printf "%s", align
+    }
+    print "}"
+    print "\\hline"
+}
+{
+    for (i = 1; i <= NF; i++) {
+        # 特殊文字のエスケープ処理
+        gsub(/\\/, "\\\\textbackslash{}", $i)
+        gsub(/&/, "\\\\&", $i)
+        gsub(/%/, "\\\\%", $i)
+        gsub(/\$/, "\\\\$", $i)
+        gsub(/#/, "\\\\#", $i)
+        gsub(/_/, "\\\\_", $i)
+        gsub(/\{/, "\\\\{", $i)
+        gsub(/\}/, "\\\\}", $i)
+        gsub(/\^/, "\\\\textasciicircum{}", $i)
+        gsub(/~/, "\\\\textasciitilde{}", $i)
+
+        printf "%s%s", $i, (i < NF ? " & " : " \\\\")
+    }
+    print ""
+    if (NR == 1) {
+        print "\\hline"
+    }
+}
+END {
+    if (NR > 0) {
+        print "\\hline"
+        print "\\end{tabular}"
+    }
+}' "$@"

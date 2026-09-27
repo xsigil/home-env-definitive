@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Periodic in-memory wallpaper rotator using epigraph-wall
+set -euo pipefail
+
+# 変更間隔（秒）。引数があればそれを採用、なければ環境変数、デフォルトは300秒（5分）
+INTERVAL="${1:-${EPIGRAPH_INTERVAL:-300}}"
+
+# 依存コマンドのチェック
+if ! command -v epigraph-wall >/dev/null 2>&1; then
+    echo "Error: 'epigraph-wall' not found in PATH." >&2
+    echo "Hint: Run 'make install' in the epigraph-wall repository." >&2
+    exit 1
+fi
+
+# クリーンアップハンドラ
+cleanup() {
+    echo -e "\nStopping epigraph rotation."
+    exit 0
+}
+trap cleanup SIGINT SIGTERM
+
+echo "Starting epigraph-wall rotation (interval: ${INTERVAL}s)..."
+
+while true; do
+    # RAM上の碑文からランダムに hyprpaper へ注入
+    epigraph-wall >/dev/null 2>&1 || true
+    sleep "$INTERVAL" &
+    wait $!
+done

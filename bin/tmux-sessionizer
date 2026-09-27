@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Fast project switcher for tmux using fzf (ThePrimeagen-style)
+set -euo pipefail
+
+# 探索対象のディレクトリ群（存在するパスだけを対象にする）
+SEARCH_PATHS=(
+    "$HOME/_lair/public"
+    "$HOME/_lair/secret"
+)
+
+VALID_PATHS=()
+for p in "${SEARCH_PATHS[@]}"; do
+    [[ -d "$p" ]] && VALID_PATHS+=("$p")
+done
+
+if [[ $# -eq 1 ]]; then
+    selected="$1"
+else
+    if [[ ${#VALID_PATHS[@]} -eq 0 ]]; then
+        echo "Error: No project directories found." >&2
+        exit 1
+    fi
+    selected=$(find "${VALID_PATHS[@]}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | fzf)
+fi
+
+[[ -z "${selected:-}" ]] && exit 0
+
+selected_name=$(basename "$selected" | tr '.' '_')
+tmux_running=$(pgrep tmux || true)
+
+# Tmux 自体が動いていない場合
+if [[ -z "${TMUX:-}" ]] && [[ -z "$tmux_running" ]]; then
+    tmux new-session -s "$selected_name" -c "$selected"
+    exit 0
+fi
+
+# セッションが未作成ならバックグラウンドで作成
+if ! tmux has-session -t="$selected_name" 2>/dev/null; then
+    tmux new-session -ds "$selected_name" -c "$selected"
+fi
+
+# Tmux 外からなら attach、Tmux 内からなら switch-client
+if [[ -z "${TMUX:-}" ]]; then
+    tmux attach-session -t "$selected_name"
+else
+    tmux switch-client -t "$selected_name"
+fi

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Open a dynamic SOCKS5 proxy via SSH
+set -euo pipefail
+
+PORT="1337"
+
+# 引数解析: 先頭が -p <port> または純粋なポート番号（数字のみ）ならポートに設定
+if [[ $# -ge 2 && "$1" == "-p" ]]; then
+    PORT="$2"
+    shift 2
+elif [[ $# -ge 1 && "$1" =~ ^[0-9]+$ ]]; then
+    PORT="$1"
+    shift 1
+fi
+
+if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $(basename "$0") [-p PORT | PORT] [user@]hostname [ssh_options...]" >&2
+    echo "Default port: 1337" >&2
+    exit 1
+fi
+
+TARGET="$1"
+shift 1
+
+echo "[*] Starting SOCKS5 proxy on 127.0.0.1:${PORT} via ${TARGET}..." >&2
+
+# -C: 圧縮
+# -N: リモートシェルを起動しない
+# -D: SOCKS5 動的転送
+# ServerAlive*: 接続の無通信切断を防止
+exec ssh \
+    -D "127.0.0.1:${PORT}" \
+    -C -N \
+    -o "ServerAliveInterval=30" \
+    -o "ServerAliveCountMax=3" \
+    -o "ExitOnForwardFailure=yes" \
+    "$TARGET" \
+    "$@"

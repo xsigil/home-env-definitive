@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# クリップボード判定（Wayland 優先、X11 フォールバック）
+copy_to_clip() {
+    if command -v wl-copy >/dev/null 2>&1; then
+        wl-copy
+    elif command -v xclip >/dev/null 2>&1; then
+        xclip -selection clipboard
+    else
+        echo "Error: No clipboard utility found (wl-copy or xclip)." >&2
+        return 1
+    fi
+}
+
+KANJI=(
+    滋 梯 惇 與 耿 亨 彬 乕 睦 熹
+    嗣 諒 雍 蓉 亘 愼 脩 堯 僖 禎
+    實 收 遃 嵯 鉾 欣 紘 而 禮 聰
+    礒 鐡 經 芙 舩 塰 蕗 衞 禰 彌
+    祺 髙 當 允 𠡍
+)
+
+echo "Select a character:"
+for i in "${!KANJI[@]}"; do
+    printf "%3d. %s  " "$i" "${KANJI[$i]}"
+    if (( (i + 1) % 5 == 0 )); then
+        printf "\n"
+    fi
+done
+(( ${#KANJI[@]} % 5 != 0 )) && printf "\n"
+
+printf "\nEnter number: "
+read -r num
+
+# 数字かつ配列の範囲内か判定
+if [[ "$num" =~ ^[0-9]+$ ]] && (( num >= 0 && num < ${#KANJI[@]} )); then
+    selected="${KANJI[$num]}"
+    # 余計な改行を含めずに文字そのものだけをクリップボードに送る
+    printf "%s" "$selected" | copy_to_clip
+    echo "Copied '$selected' to clipboard."
+else
+    echo "Invalid selection." >&2
+    exit 1
+fi

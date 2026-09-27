@@ -1,0 +1,8 @@
+
+# Dict data / large corpora
+local/share/dict/*.db
+local/share/dict/*.sqlite3
+local/share/dict/*.gz
+local/share/db/*.db
+local/share/db/*.sqlite3
+local/share/db/*.gz

@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+import sys
+import click
+from bs4 import BeautifulSoup
+
+@click.command()
+@click.argument('selector', type=str)
+@click.argument('filename', type=click.File('r', encoding='utf-8', errors='ignore'), required=False)
+@click.option('-t', '--text', is_flag=True, help='Extract inner text only (strip tags)')
+@click.option('-a', '--attr', type=str, help='Extract specific attribute value (e.g. href, src)')
+def htmlselect(selector, filename, text, attr):
+    """Extract HTML elements matching the CSS selector from stdin or file."""
+    content = filename.read() if filename else sys.stdin.read()
+    if not content.strip():
+        sys.exit(0)
+
+    soup = BeautifulSoup(content, 'html.parser')
+    elements = soup.select(selector)
+
+    for el in elements:
+        if attr:
+            val = el.get(attr)
+            if val is not None:
+                # リスト形式（class属性など）の場合はスペース結合
+                if isinstance(val, list):
+                    click.echo(" ".join(val))
+                else:
+                    click.echo(val)
+        elif text:
+            click.echo(el.get_text(strip=True))
+        else:
+            click.echo(str(el))
+
+if __name__ == '__main__':
+    htmlselect()

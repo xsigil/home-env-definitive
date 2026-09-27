@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat << EOF
+Usage: $(basename "$0") [OPTIONS] <file>
+
+Watch a log file and speak newly appended lines in real-time.
+
+Options:
+  -s, --speed <wpm>    Speech speed in words per minute (default: 160)
+  -v, --voice <voice>  Voice name/language for espeak-ng (default: en)
+  -h, --help           Show this help message
+EOF
+    exit 1
+}
+
+SPEED=160
+VOICE="en"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -s|--speed) SPEED="$2"; shift 2 ;;
+        -v|--voice) VOICE="$2"; shift 2 ;;
+        -h|--help) usage ;;
+        -*) echo "Unknown option: $1" >&2; usage ;;
+        *) TARGET_FILE="$1"; shift ;;
+    esac
+done
+
+if [[ -z "${TARGET_FILE:-}" ]]; then
+    echo "Error: Target file is required." >&2
+    usage
+fi
+
+if [[ ! -f "$TARGET_FILE" ]]; then
+    touch "$TARGET_FILE"
+fi
+
+# 末尾追記を監視し、新規行だけを1行ずつ音声合成に流し込む
+tail -n 0 -F "$TARGET_FILE" | while IFS= read -r line; do
+    if [[ -n "$line" ]]; then
+        espeak-ng -s "$SPEED" -v "$VOICE" "$line"
+    fi
+done

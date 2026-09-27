@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Strip ANSI escape sequences (colors, styles, and terminal controls)
+set -euo pipefail
+
+# Matches standard CSI sequences: ESC [ <params> <final_char>
+# Handles standard attributes, 256-color, 24-bit truecolor, and cursor moves
+exec sed -E $'s/\x1B\\[[0-9;]*[a-zA-Z]//g' "$@"

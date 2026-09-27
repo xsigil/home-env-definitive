@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Duplicate stdin to both stdout and stderr (streaming tee to /dev/stderr)
+exec tee /dev/stderr "$@"

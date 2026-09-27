@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Transpose rows and columns of whitespace-separated or tab-separated text
+set -euo pipefail
+
+exec gawk '
+{
+    for (i = 1; i <= NF; i++) {
+        cell[NR, i] = $i
+    }
+    if (NF > max_cols) {
+        max_cols = NF
+    }
+    max_rows = NR
+}
+END {
+    for (col = 1; col <= max_cols; col++) {
+        for (row = 1; row <= max_rows; row++) {
+            val = ( (row, col) in cell ) ? cell[row, col] : ""
+            printf "%s%s", val, (row < max_rows ? OFS : ORS)
+        }
+    }
+}' "$@"

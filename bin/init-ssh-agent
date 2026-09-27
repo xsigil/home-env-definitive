@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+echo "[+] Activating ssh-agent via systemd user session..."
+systemctl --user enable --now ssh-agent
+systemctl --user is-active ssh-agent

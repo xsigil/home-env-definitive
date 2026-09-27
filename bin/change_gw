@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${1:-}" ]]; then
+    echo "Usage: $(basename "$0") <target_host_or_ip>" >&2
+    exit 1
+fi
+
+TARGET_GW=$(qhost "$1")
+
+if [[ -z "$TARGET_GW" ]]; then
+    # /etc/hosts にない場合は直接IPが渡されたとみなす
+    TARGET_GW="$1"
+fi
+
+echo "Switching default gateway to: $TARGET_GW ($1)"
+sudo ip route del default || true
+sudo ip route add default via "$TARGET_GW"
+
+echo "Current default route:"
+ip route show default

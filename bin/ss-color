@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Color picker for Wayland: Pick a pixel and get its hex color code
+set -euo pipefail
+
+# 1. slurp で 1 ピクセルの座標を取得（Escでキャンセルされたら静かに終了）
+geom=$(slurp -p 2>/dev/null) || exit 0
+
+# 2. 1ピクセルだけキャプチャし、ImageMagick で直接 6桁 HEX (#RRGGBB) を抽出
+hex=$(grim -g "$geom" -t ppm - | magick - -format '#%[hex:p{0,0}]\n' info: 2>/dev/null | cut -c 1-7)
+
+if [[ -z "$hex" ]]; then
+    exit 1
+fi
+
+# 3. 結果を標準出力に表示
+echo "$hex"
+
+# 4. wl-copy があれば自動でクリップボードにも格納
+if command -v wl-copy >/dev/null 2>&1; then
+    printf "%s" "$hex" | wl-copy
+fi

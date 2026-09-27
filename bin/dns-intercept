@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Intercept all outbound DNS traffic (UDP/TCP 53) and redirect to local Unbound/resolver via nftables
+set -euo pipefail
+
+TABLE_FAMILY="inet"
+TABLE_NAME="dns_intercept"
+
+# root 権限チェック
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo "Error: This command requires root privileges. Please run with sudo." >&2
+        exit 1
+    fi
+}
+
+# nftables コマンドの存在確認
+if ! command -v nft >/dev/null 2>&1; then
+    echo "Error: 'nft' command not found. Please install nftables." >&2
+    exit 1
+fi
+
+usage() {
+    cat << EOF
+Usage: $(basename "$0") <enable|disable|status|toggle>
+
+Manage transparent DNS redirection to 127.0.0.1:53 using nftables.
+
+Commands:
+  enable     Start intercepting outbound DNS queries
+  disable    Stop intercepting (remove nftables rules)
+  status     Show current interception status
+  toggle     Switch between enabled and disabled
+EOF
+    exit 1
+}
+
+is_enabled() {
+    nft list table "$TABLE_FAMILY" "$TABLE_NAME" >/dev/null 2>&1
+}
+
+enable_intercept() {
+    check_root
+    if is_enabled; then
+        echo "DNS interception is already ENABLED."
+        return 0
+    fi
+
+    # アトミックにテーブル・チェーン・ルールを一括作成
+    nft -f - << EOF
+table ${TABLE_FAMILY} ${TABLE_NAME} {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        meta l4proto { udp, tcp } th dport 53 redirect to :53
+    }
+}
+EOF
+    echo "DNS interception ENABLED (all DNS queries -> 127.0.0.1:53)."
+}
+
+disable_intercept() {
+    check_root
+    if ! is_enabled; then
+        echo "DNS interception is already DISABLED."
+        return 0
+    fi
+
+    nft delete table "$TABLE_FAMILY" "$TABLE_NAME"
+    echo "DNS interception DISABLED (nftables table removed)."
+}
+
+show_status() {
+    if is_enabled; then
+        echo "Status: ENABLED"
+        echo "--- Active Ruleset ---"
+        nft list table "$TABLE_FAMILY" "$TABLE_NAME"
+    else
+        echo "Status: DISABLED (direct queries to configured DNS servers)"
+    fi
+}
+
+case "${1:-}" in
+    enable|on|start)
+        enable_intercept
+        ;;
+    disable|off|stop)
+        disable_intercept
+        ;;
+    status)
+        show_status
+        ;;
+    toggle)
+        if is_enabled; then
+            disable_intercept
+        else
+            enable_intercept
+        fi
+        ;;
+    *)
+        usage
+        ;;
+esac

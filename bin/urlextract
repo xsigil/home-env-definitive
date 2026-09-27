@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Extract URLs or domain names from text files or standard input
+set -euo pipefail
+
+ONLY_DOMAIN=false
+UNIQUE=false
+
+usage() {
+    cat << EOF
+Usage: $(basename "$0") [options] [file...]
+
+Extract URLs or domains from standard input or files.
+
+Options:
+  -d, --domain    Extract only domain names (FQDN / host)
+  -u, --unique    Deduplicate and sort results
+  -h, --help      Show this help message
+
+Examples:
+  cat access.log | $(basename "$0")
+  $(basename "$0") -d -u raw_data.txt
+EOF
+    exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d|--domain)
+            ONLY_DOMAIN=true
+            shift
+            ;;
+        -u|--unique)
+            UNIQUE=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# URL抽出用の正規表現 (http / https)
+URL_REGEX='https?://[a-zA-Z0-9][-a-zA-Z0-9@:%._+~#=]{0,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*'
+
+extract_flow() {
+    # 1行に複数あってもすべて改行区切りで抜き出す
+    grep -E -o "$URL_REGEX" "$@" 2>/dev/null || true
+}
+
+if $ONLY_DOMAIN; then
+    if $UNIQUE; then
+        extract_flow "$@" | sed -E 's|^https?://([^/@:]+).*|\1|' | sort -u
+    else
+        extract_flow "$@" | sed -E 's|^https?://([^/@:]+).*|\1|'
+    fi
+else
+    if $UNIQUE; then
+        extract_flow "$@" | sort -u
+    else
+        extract_flow "$@"
+    fi
+fi

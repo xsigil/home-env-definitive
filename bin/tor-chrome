@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Launch Chromium via Tor SOCKS5 proxy with strict DNS leak protection
+set -euo pipefail
+
+PROXY_PORT="${TOR_SOCKS_PORT:-9050}"
+PROXY_URL="socks5://127.0.0.1:${PROXY_PORT}"
+
+# ブラウザバイナリの検出
+BROWSER_BIN=""
+for bin in chromium chromium-browser google-chrome brave-browser google-chrome-stable; do
+    if command -v "$bin" >/dev/null 2>&1; then
+        BROWSER_BIN="$bin"
+        break
+    fi
+done
+
+if [[ -z "$BROWSER_BIN" ]]; then
+    echo "Error: No Chromium-based browser found (chromium, chrome, brave)." >&2
+    exit 1
+fi
+
+# Tor SOCKS ポートが開いているか簡易チェック (nc があれば)
+if command -v nc >/dev/null 2>&1; then
+    if ! nc -z 127.0.0.1 "$PROXY_PORT" 2>/dev/null; then
+        echo "Warning: Tor SOCKS proxy appears closed on 127.0.0.1:${PROXY_PORT}." >&2
+    fi
+fi
+
+TMP_DIR=$(mktemp -d /tmp/tor-chrome.XXXXXX)
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+exec "$BROWSER_BIN" \
+    --incognito \
+    --user-data-dir="$TMP_DIR" \
+    --disable-webrtc \
+    --proxy-server="$PROXY_URL" \
+    --host-resolver-rules="MAP * ~NOTFOUND , EXCLUDE 127.0.0.1, EXCLUDE localhost" \
+    "$@"

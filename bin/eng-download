@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Download Oxford pronunciation MP3 from Google Dictionary CDN
+set -euo pipefail
+
+if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $(basename "$0") <word> [output_dir]"
+    echo "Example: $(basename "$0") serendipity ~/Music/pronunciations"
+    exit 1
+fi
+
+WORD=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+OUT_DIR="${2:-.}"
+OUT_FILE="${OUT_DIR}/${WORD}.mp3"
+
+mkdir -p "$OUT_DIR"
+
+URL="https://ssl.gstatic.com/dictionary/static/sounds/oxford/${WORD}--_gb_1.mp3"
+
+if curl -sSf -L "$URL" -o "$OUT_FILE"; then
+    echo "Saved: $OUT_FILE"
+else
+    echo "Error: Pronunciation for '${WORD}' not found." >&2
+    rm -f "$OUT_FILE"
+    exit 1
+fi

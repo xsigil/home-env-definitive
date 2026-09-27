@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+import sys
+import click
+import langid
+
+@click.command()
+@click.argument('filename', type=click.File('r'), required=False)
+@click.option('-q', '--query-lang', help='Check if detected language matches this code (exits 0 if match, 1 if not)')
+@click.option('--raw', is_flag=True, help='Print language code only (e.g. "ja", "en")')
+def detect_language(filename, query_lang, raw):
+    """Detect language of the input text from stdin or file."""
+    text = filename.read() if filename else sys.stdin.read()
+
+    if not text.strip():
+        sys.exit(2)
+
+    lang, _ = langid.classify(text)
+
+    if query_lang:
+        # シェルの if 文でそのまま使えるように終了コードで合否を返す
+        if lang == query_lang:
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    if raw:
+        click.echo(lang)
+    else:
+        click.echo(f"{lang}")
+
+if __name__ == '__main__':
+    detect_language()

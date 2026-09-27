@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${1:-}" || ! -f "$1" ]]; then
+    echo "Usage: sha1mv <file>" >&2
+    exit 1
+fi
+
+FILE="$1"
+# 拡張子の抽出（拡張子がない場合は空）
+EXT="${FILE##*.}"
+if [[ "$EXT" == "$FILE" ]]; then
+    EXT_SUFFIX=""
+else
+    EXT_SUFFIX=".${EXT}"
+fi
+
+# SHA-1 ハッシュの計算
+HASH=$(sha1sum "$FILE" | cut -d' ' -f1)
+NEW_NAME="${HASH}${EXT_SUFFIX}"
+
+# ディレクトリ階層を維持してリネーム
+DIR=$(dirname "$FILE")
+TARGET="${DIR}/${NEW_NAME}"
+
+if [[ "$FILE" == "$TARGET" ]]; then
+    echo "Already named as SHA-1: $NEW_NAME"
+    echo -n "$NEW_NAME" | wl-copy
+    exit 0
+fi
+
+# -n で既存同名ファイルを上書き防止（内容が同一ならハッシュも同一）
+mv -n "$FILE" "$TARGET"
+
+# クリップボードには新しいファイル名（ベース名）をコピー
+echo -n "$NEW_NAME" | wl-copy
+
+echo "Renamed: $FILE -> $TARGET"
+echo "Copied to clipboard: $NEW_NAME"

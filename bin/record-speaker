@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Record desktop/speaker audio (monitor loopback) to a WAV file
+set -euo pipefail
+
+if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $(basename "$0") <output.wav>" >&2
+    echo "" >&2
+    echo "Current default monitor source:" >&2
+    default_sink=$(pactl get-default-sink 2>/dev/null || pactl info | awk -F': ' '/Default Sink:/{print $2}')
+    echo "  ${default_sink}.monitor" >&2
+    exit 1
+fi
+
+OUT_FILE="$1"
+
+# 1. 現在のデフォルト出力を取得
+default_sink=$(pactl get-default-sink 2>/dev/null || pactl info | awk -F': ' '/Default Sink:/{print $2}')
+
+if [[ -n "$default_sink" ]]; then
+    device="${default_sink}.monitor"
+else
+    # フォールバック: monitor かつ HDMI 以外の最初のソース
+    device=$(pactl list short sources | awk '{print $2}' | grep '\.monitor$' | grep -v -i 'hdmi' | head -n 1)
+fi
+
+if [[ -z "$device" ]]; then
+    echo "Error: No valid monitor audio device found." >&2
+    exit 1
+fi
+
+echo "Recording from: $device"
+echo "Output file:    $OUT_FILE"
+echo "Press Ctrl+C to stop recording..."
+
+# Ctrl+C で安全に終了
+trap 'echo -e "\nRecording saved to $OUT_FILE"; exit 0' SIGINT SIGTERM
+
+exec parec -d "$device" --file-format=wav "$OUT_FILE"

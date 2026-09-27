@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Generate dates for the current week (Monday to Sunday)
+set -euo pipefail
+
+# 今週の月曜日の日付を取得（GNU date）
+monday=$(date -d "last monday" +%Y-%m-%d 2>/dev/null || date +%Y-%m-%d)
+if [[ $(date +%u) -eq 1 ]]; then
+    monday=$(date +%Y-%m-%d)
+fi
+
+# 月曜〜日曜まで順番に7日分出力
+for i in {0..6}; do
+    date "+%Y/%m/%d (%a):" -d "$monday +$i day"
+done

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    echo "Usage: $(basename "$0") [-i <ip>] [hostname]" >&2
+    exit 1
+}
+
+IP=""
+while getopts "i:h" opt; do
+    case "$opt" in
+        i) IP="$OPTARG" ;;
+        h|*) usage ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+HOST="${1:-}"
+
+if [[ -n "$IP" ]]; then
+    awk -v ip="$IP" '$1 == ip {print $2; exit}' /etc/hosts
+elif [[ -n "$HOST" ]]; then
+    awk -v name="$HOST" '$2 == name {print $1; exit}' /etc/hosts
+else
+    usage
+fi

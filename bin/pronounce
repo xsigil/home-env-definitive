@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $(basename "$0") <word>"
+    exit 1
+fi
+
+WORD=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+
+STORAGE_DIR="/mnt/storage01/English-words-pronunciation-mp3-audio-download/download"
+FALLBACK_DIR="${HOME}/.local/share/pronunciations"
+
+if [[ -d "$STORAGE_DIR" ]]; then
+    CACHE_DIR="$STORAGE_DIR"
+else
+    CACHE_DIR="$FALLBACK_DIR"
+fi
+mkdir -p "$CACHE_DIR"
+
+AUDIO_FILE="${CACHE_DIR}/${WORD}.mp3"
+
+if [[ ! -f "$AUDIO_FILE" ]]; then
+    URL="https://ssl.gstatic.com/dictionary/static/sounds/oxford/${WORD}--_gb_1.mp3"
+    if ! curl -sSf -L "$URL" -o "$AUDIO_FILE"; then
+        echo "Error: Pronunciation for '${WORD}' not found." >&2
+        rm -f "$AUDIO_FILE"
+        exit 1
+    fi
+fi
+
+if command -v mpg123 >/dev/null 2>&1; then
+    exec mpg123 -q "$AUDIO_FILE"
+elif command -v mpv >/dev/null 2>&1; then
+    exec mpv --no-terminal --really-quiet "$AUDIO_FILE"
+elif command -v ffplay >/dev/null 2>&1; then
+    exec ffplay -nodisp -autoexit -loglevel quiet "$AUDIO_FILE"
+else
+    echo "Error: No suitable audio player found (install mpg123 or mpv)." >&2
+    exit 1
+fi
