@@ -1,0 +1,30 @@
+# ~/.bashrc - Minimal interactive fallback for home-env-definitive
+
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
+
+# --- Shell Options & Keybindings ---
+set -o vi
+shopt -s histappend
+shopt -s checkwinsize
+
+# --- History Configuration ---
+HISTSIZE=10000
+HISTFILESIZE=20000
+HISTCONTROL=ignoreboth:erasedups
+
+# --- Basic Aliases ---
+alias ls='ls --color=auto'
+alias ll='ls -lah --color=auto'
+alias grep='grep --color=auto'
+
+# --- Environment Fallbacks ---
+export EDITOR="${EDITOR:-vim}"
+export VISUAL="$EDITOR"
+export PAGER="${PAGER:-less}"
+
+# --- Minimal Prompt ---
+PS1='[\u@\h \W]\$ '
+
+# --- Integration ---
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
