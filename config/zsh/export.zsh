@@ -20,4 +20,4 @@ fi
 
 # Recon Profile
 export NMAP_SERVICES="${XDG_CONFIG_HOME:-$HOME/.config}/nmap/nmap-services"
-export PATH="$HOME/.local/share/ssh-to/machines:$PATH:$HOME/_lair/public/home-env-definitive/bin"
+export PATH="$HOME/.local/share/ssh-to/machines:$PATH:$HOME/.local/bin"

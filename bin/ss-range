@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Screen area capture and annotation tool for Wayland
+set -euo pipefail
+
+# 1. 範囲選択（Escでキャンセルされたら静かに終了）
+geom=$(slurp 2>/dev/null) || exit 0
+
+if [[ -z "$geom" ]]; then
+    exit 0
+fi
+
+# 2. 選択領域をキャプチャし、swappy に標準入力経由で直接渡す
+#    swappy 側の保存先デフォルト（~/Pictures 等）またはUI上で保存・編集・クリップボードコピーが可能
+grim -g "$geom" - | swappy -f -
