@@ -94,3 +94,5 @@ function gput() {
 [[ -f "${ZDOTDIR}/alias.zsh" ]]   && source "${ZDOTDIR}/alias.zsh"
 [[ -f "${ZDOTDIR}/keybind.zsh" ]] && source "${ZDOTDIR}/keybind.zsh"
 [[ -f "${ZDOTDIR}/prompt.zsh" ]]  && source "${ZDOTDIR}/prompt.zsh"
+[[ -f "${ZDOTDIR}/functions.zsh" ]]  && source "${ZDOTDIR}/functions.zsh"
+umask 077

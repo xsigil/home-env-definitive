@@ -22,5 +22,3 @@ alias ptrans="trans -x localhost:8118"
 alias world="psql the_world"
 alias dbui="nvim --cmd 'autocmd VimEnter * DBUI'"
 
-# Jail Environments
-alias blackarch="sudo chroot ${HOME}/_jails/blackarch /usr/bin/bash"
