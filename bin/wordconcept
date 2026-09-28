@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Trace hypernym hierarchy to root concepts using Japanese WordNet (wnjpn.db)
+set -euo pipefail
+
+if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $(basename "$0") <word>"
+    echo "Example: $(basename "$0") ネコ"
+    exit 1
+fi
+
+TARGET_WORD="$1"
+
+DB_PATH="${WNJPN_DB:-}"
+CANDIDATES=(
+    "$DB_PATH"
+    "$HOME/.local/share/wordnet/wnjpn.db"
+    "$HOME/Database/wnjpn.db"
+    "/mnt/storage01/Database/wnjpn.db"
+)
+
+FOUND_DB=""
+for c in "${CANDIDATES[@]}"; do
+    if [[ -n "$c" && -f "$c" ]]; then
+        FOUND_DB="$c"
+        break
+    fi
+done
+
+if [[ -z "$FOUND_DB" ]]; then
+    echo "Error: 'wnjpn.db' not found." >&2
+    echo "Hint: Download it via:" >&2
+    echo "  mkdir -p ~/.local/share/wordnet" >&2
+    echo "  curl -sL 'http://compling.hss.ntu.edu.sg/wnja/data/1.1/wnjpn.db.gz' | gzip -d > ~/.local/share/wordnet/wnjpn.db" >&2
+    exit 1
+fi
+
+sqlite3 -separator $'\t' "$FOUND_DB" << SQL
+WITH RECURSIVE
+  initial_synsets(root_word, initial_synset) AS (
+    SELECT w.lemma, s.synset
+    FROM word w
+    JOIN sense s ON w.wordid = s.wordid
+    WHERE w.lemma = '${TARGET_WORD}'
+  ),
+  ancestors(initial_synset, current_synset, depth) AS (
+    SELECT initial_synset, initial_synset, 0
+    FROM initial_synsets
+    UNION ALL
+    SELECT a.initial_synset, l.synset1, a.depth + 1
+    FROM ancestors a
+    JOIN synlink l ON l.synset2 = a.current_synset AND l.link = 'hypo'
+    WHERE a.depth < 30
+  ),
+  max_depth_per_initial AS (
+    SELECT initial_synset, MAX(depth) AS max_depth
+    FROM ancestors
+    GROUP BY initial_synset
+  )
+SELECT 
+  init_s.name AS initial_concept,
+  COALESCE(init_d.def, '(定義なし)') AS initial_def,
+  top_s.name AS root_concept,
+  COALESCE(top_d.def, '(定義なし)') AS root_def
+FROM max_depth_per_initial m
+JOIN ancestors a ON a.initial_synset = m.initial_synset AND a.depth = m.max_depth
+JOIN synset init_s ON init_s.synset = m.initial_synset
+LEFT JOIN synset_def init_d ON init_d.synset = m.initial_synset AND init_d.lang = 'jpn'
+JOIN synset top_s ON top_s.synset = a.current_synset
+LEFT JOIN synset_def top_d ON top_d.synset = a.current_synset AND top_d.lang = 'jpn';
+SQL
