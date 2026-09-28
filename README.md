@@ -65,7 +65,7 @@ Lexical resources reside in `local/share/`:
 Symlinks are deployed to standard XDG paths (`~/.config`, `~/.local/share`, `~/.local/bin`):
 
 ```sh
-git clone [https://github.com/](https://github.com/)<your-username>/home-env-definitive.git
+git clone [https://github.com/](https://github.com/xsigil/home-env-definitive.git)
 cd home-env-definitive
 ./install.sh
 
