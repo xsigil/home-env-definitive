@@ -22,3 +22,6 @@ alias ptrans="trans -x localhost:8118"
 alias world="psql the_world"
 alias dbui="nvim --cmd 'autocmd VimEnter * DBUI'"
 
+alias cd-secret="cd ~/_lair/secret"
+alias cd-public="cd ~/_lair/public"
+alias cd-private="cd ~/_lair/private"

@@ -29,6 +29,7 @@ link_file "$BASEDIR/config/dnscrypt-proxy"                "$HOME/.config/dnscryp
 link_file "$BASEDIR/config/nmap"                          "$HOME/.config/nmap"
 link_file "$BASEDIR/config/proxychains"                   "$HOME/.config/proxychains"
 link_file "$BASEDIR/config/ssl"                           "$HOME/.config/ssl"
+link_file "$BASEDIR/config/nvim"                          "$HOME/.config/nvim"
 
 # 3. Executable Binaries (~/.local/bin/...)
 mkdir -p "$HOME/.local/bin"
